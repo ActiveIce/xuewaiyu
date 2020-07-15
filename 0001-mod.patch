@@ -1,0 +1,76 @@
+diff --git a/v2rayN/v2rayN/Handler/ConfigHandler.cs b/v2rayN/v2rayN/Handler/ConfigHandler.cs
+index fefad82..310de36 100644
+--- a/v2rayN/v2rayN/Handler/ConfigHandler.cs
++++ b/v2rayN/v2rayN/Handler/ConfigHandler.cs
+@@ -40,7 +40,7 @@ namespace v2rayN.Handler
+                     vmess = new List<VmessItem>(),
+ 
+                     //Mux
+-                    muxEnabled = true,
++                    muxEnabled = false,
+ 
+                     ////默认监听端口
+                     //config.pacPort = 8888;
+@@ -89,11 +89,11 @@ namespace v2rayN.Handler
+             }
+             if (Utils.IsNullOrEmpty(config.routingMode))
+             {
+-                config.routingMode = "0";
++                config.routingMode = "3";
+             }
+             if (config.useragent == null)
+             {
+-                config.useragent = new List<string>();
++                config.useragent = Utils.String2List("geosite:geolocation-!cn");
+             }
+             if (config.userdirect == null)
+             {
+@@ -101,7 +101,7 @@ namespace v2rayN.Handler
+             }
+             if (config.userblock == null)
+             {
+-                config.userblock = new List<string>();
++                config.userblock = Utils.String2List("geosite:category-ads-all");
+             }
+             //kcp
+             if (config.kcpItem == null)
+diff --git a/v2rayN/v2rayN/Tool/Utils.cs b/v2rayN/v2rayN/Tool/Utils.cs
+index 09c023d..748d098 100644
+--- a/v2rayN/v2rayN/Tool/Utils.cs
++++ b/v2rayN/v2rayN/Tool/Utils.cs
+@@ -662,7 +662,8 @@ namespace v2rayN
+             ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3
+                                        | SecurityProtocolType.Tls
+                                        | SecurityProtocolType.Tls11
+-                                       | SecurityProtocolType.Tls12;
++                                       | SecurityProtocolType.Tls12
++                                       | SecurityProtocolType.Tls13;
+             ServicePointManager.DefaultConnectionLimit = 256;
+         }
+         #endregion
+diff --git a/v2rayN/v2rayN/v2rayN.csproj b/v2rayN/v2rayN/v2rayN.csproj
+index 64ece7d..3fc250e 100644
+--- a/v2rayN/v2rayN/v2rayN.csproj
++++ b/v2rayN/v2rayN/v2rayN.csproj
+@@ -9,7 +9,7 @@
+     <AppDesignerFolder>Properties</AppDesignerFolder>
+     <RootNamespace>v2rayN</RootNamespace>
+     <AssemblyName>v2rayN</AssemblyName>
+-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
++    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+     <FileAlignment>512</FileAlignment>
+     <TargetFrameworkProfile />
+     <IsWebBootstrapper>false</IsWebBootstrapper>
+diff --git a/v2rayN/v2rayUpgrade/v2rayUpgrade.csproj b/v2rayN/v2rayUpgrade/v2rayUpgrade.csproj
+index b7d6307..f49df2b 100644
+--- a/v2rayN/v2rayUpgrade/v2rayUpgrade.csproj
++++ b/v2rayN/v2rayUpgrade/v2rayUpgrade.csproj
+@@ -8,7 +8,7 @@
+     <OutputType>WinExe</OutputType>
+     <RootNamespace>v2rayUpgrade</RootNamespace>
+     <AssemblyName>v2rayUpgrade</AssemblyName>
+-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
++    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+     <FileAlignment>512</FileAlignment>
+     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+     <Deterministic>true</Deterministic>

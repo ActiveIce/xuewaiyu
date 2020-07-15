@@ -1,0 +1,241 @@
+name: auto build engine
+
+on: 
+  release:
+    types: [published]
+  schedule:
+    - cron: "0 20 * * *"
+  push:
+    branches: 
+      - master
+  watch:
+    types: [started]
+   
+jobs:
+  build-haproxy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Install build depedencies
+      run: |
+        sudo apt update
+        sudo apt-get -y install libreadline-dev libsystemd-dev git-svn
+    
+    - name: Bulid jemalloc
+      run: |
+        git clone https://github.com/jemalloc/jemalloc.git -b dev --depth 1
+        pushd jemalloc
+        ./autogen.sh
+        make -j$(nproc) dist
+        make -j$(nproc) build_lib_static
+        sudo make -j$(nproc) install_lib_static
+        popd
+
+    - name: Bulid pcre2
+      run: |   
+        git svn clone -r HEAD svn://vcs.pcre.org/pcre2/code/trunk pcre2
+        pushd pcre2
+        ./autogen.sh
+        ./configure --disable-shared
+        make -j$(nproc) 
+        sudo make -j$(nproc) install
+        popd
+    
+    - name: Bulid openssl
+      run: | 
+        git clone https://github.com/openssl/openssl.git --depth 1
+        pushd openssl
+        ./config no-shared
+        make -j$(nproc)
+        sudo make -j$(nproc) install_sw
+        popd
+    
+    - name: Bulid lua
+      run: |
+        mkdir lua
+        wget --no-check-certificate -O lua.tar.gz http://www.lua.org/ftp/lua-5.4.0.tar.gz
+        tar xzf lua.tar.gz -C lua --strip-components 1
+        pushd lua
+        make -j$(nproc) linux
+        sudo make -j$(nproc) install
+        popd
+    
+    - name: Bulid zlib
+      run: |
+        git clone https://github.com/madler/zlib.git -b develop --depth 1
+        pushd zlib
+        ./configure --static
+        make -j$(nproc)
+        sudo make -j$(nproc) install
+        popd
+    
+    - name: Bulid haproxy
+      run: |
+        git clone http://git.haproxy.org/git/haproxy.git haproxysrc
+        wget --no-check-certificate https://src.fedoraproject.org/rpms/haproxy/raw/master/f/haproxy-2.2.0-lua-5.4.patch
+        pushd haproxysrc
+        git apply ../haproxy-2.2.0-lua-5.4.patch --reject
+        make -j$(nproc) TARGET=linux-glibc USE_STATIC_PCRE2=1 USE_OPENSSL=1 USE_LUA=1 USE_ZLIB=1 USE_SYSTEMD=1 USE_REGPARM=1 USE_GETADDRINFO=1 USE_NS=1 USE_THREAD=1 USE_PTHREAD_PSHARED=1 ADDLIB='-ljemalloc'
+        popd
+        mkdir -p haproxy/errors
+        cp haproxysrc/haproxy haproxy/
+        cp haproxysrc/examples/errorfiles/*.http haproxy/errors/
+        cp haproxysrc/contrib/systemd/haproxy.service.in haproxy/haproxy.service
+        sed -i 's/@SBINDIR@/\/usr\/sbin/' haproxy/haproxy.service
+        sed -i '9s/^/#/' haproxy/haproxy.service
+    
+    - name: Upload haproxy
+      uses: actions/upload-artifact@master
+      with:
+        name: haproxy
+        path: haproxy
+
+  build-core:
+    runs-on: ubuntu-latest
+    
+    steps:
+    #- name: Setup golang
+     # uses: actions/setup-go@master
+     # with:
+      #  stable: 'false'
+
+    - name: Bulid core
+      run: |
+        mkdir core
+        git clone https://github.com/v2fly/v2ray-core.git --depth 1
+        pushd v2ray-core
+        env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -p $(nproc) -o ../core/v2ray -ldflags "-s -w" ./main
+        env GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -p $(nproc) -o ../core/v2ctl -tags confonly -ldflags "-s -w" ./infra/control/main
+        env GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -p $(nproc) -o ../core/wv2ray.exe -ldflags "-H windowsgui -s -w" ./main
+        env GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -p $(nproc) -o ../core/v2ctl.exe -tags confonly -ldflags "-s -w" ./infra/control/main
+        popd
+        cp v2ray-core/release/config/systemd/v2ray.service core/
+        
+    - name: Upload core
+      uses: actions/upload-artifact@master
+      with:
+        name: core
+        path: core
+
+    
+  build-client:
+    runs-on: windows-latest
+
+    steps:
+    - name: Setup msbuild
+      uses: microsoft/setup-msbuild@master
+    
+    - name: Setup nuget
+      uses: nuget/setup-nuget@master
+    
+    - name: Bulid client
+      run: |
+        mkdir client
+        Invoke-WebRequest -Uri https://raw.githubusercontent.com/ActiveIce/xuewaiyu/master/0001-mod.patch -OutFile 0001-mod.patch -UseBasicParsing
+        git clone https://github.com/2dust/v2rayN.git --depth 1
+        pushd v2rayN
+        git apply ../0001-mod.patch --reject
+        popd
+        pushd v2rayN/v2rayN
+        nuget restore
+        msbuild -m -p:Configuration=Release
+        popd
+        cp -r v2rayN/v2rayN/v2rayN/bin/Release/* client/
+        rm client/*.exe.config
+    
+    - name: Upload client
+      uses: actions/upload-artifact@master
+      with:
+        name: client
+        path: client
+
+  test:
+    needs: [build-haproxy, build-core, build-client]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download haproxy
+      uses: actions/download-artifact@master
+      with:
+        name: haproxy
+        path: haproxy
+    
+    - name: Download core
+      uses: actions/download-artifact@master
+      with:
+        name: core
+        path: core
+
+    - name: Test
+      run: |
+        wget --no-check-certificate https://raw.githubusercontent.com/ActiveIce/xuewaiyu/master/test.sh
+        chmod +x test.sh
+        ./test.sh
+  
+  push:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+    
+    - name: Clean
+      run: |
+        rm *.zip *.apk *.tar.gz
+    
+    - name: Download haproxy
+      uses: actions/download-artifact@master
+      with:
+        name: haproxy
+        path: haproxy
+
+    - name: Download core
+      uses: actions/download-artifact@master
+      with:
+        name: core
+        path: core
+
+    - name: Download client
+      uses: actions/download-artifact@master
+      with:
+        name: client
+        path: client
+
+    - name: Build packages
+      run: |
+        pushd haproxy
+        chmod +x haproxy
+        tar czf ../haproxy.tar.gz *
+        popd
+        rm -r haproxy
+
+        pushd core
+        wget --no-check-certificate https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/geoip.dat
+        wget --no-check-certificate https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/geosite.dat
+        cp *.dat ../client
+        mv *.exe ../client
+        chmod +x v2ray v2ctl
+        tar czf ../xwy-linux.tar.gz *
+        popd
+        rm -r core
+
+        pushd client
+        zip -r ../xwy-windows.zip *
+        popd
+        rm -r client
+
+        TAG_URL="https://api.github.com/repos/2dust/v2rayNG/releases"
+        NEW_VER="$(curl -s "${TAG_URL}" --connect-timeout 10| grep 'tag_name' -m 1 | cut -d\" -f4)"
+        wget --no-check-certificate -O xwy-android.apk https://github.com/2dust/v2rayNG/releases/download/${NEW_VER}/v2rayNG_${NEW_VER}_arm64-v8a.apk
+        
+    - name: Commit
+      run: |
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions"
+        git checkout --orphan new_branch
+        git add -A
+        git commit -am "update new file"
+        git branch -D master
+        git branch -m master
+        git push origin master --force
