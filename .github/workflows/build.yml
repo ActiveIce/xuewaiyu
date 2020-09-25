@@ -3,8 +3,8 @@ name: auto build engine
 on: 
   release:
     types: [published]
-  schedule:
-    - cron: "0 20 * * *"
+  #schedule:
+  #  - cron: "0 20 * * *"
   push:
     branches: 
       - master
