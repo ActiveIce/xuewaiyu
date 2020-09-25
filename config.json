@@ -10,18 +10,18 @@
                 "clients": [
                     {
                         "id": "00000000-0000-0000-0000-000000000000",
-		                "flow": "xtls-rprx-origin",
+                        "flow": "xtls-rprx-origin",
                         "level": 0
                     }
                 ],
                 "decryption": "none",
                 "fallbacks": [
-		            {
-			            "dest": 8080
-		            },
                     {
-			            "path": "/path",
-			            "dest": 8443,
+                        "dest": 8080
+                    },
+                    {
+                        "path": "/path",
+                        "dest": 8443,
                         "xver": 1
                     }
                 ]
@@ -58,11 +58,11 @@
                 "network": "ws",
                 "security": "none",
                 "wsSettings": {
-		            "acceptProxyProtocol": true,
+                    "acceptProxyProtocol": true,
                     "path": "/path"
                 }
-	        }
-	    }
+            }
+        }
     ],
     "outbounds": [
         {
