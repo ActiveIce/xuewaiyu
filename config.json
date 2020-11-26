@@ -11,10 +11,10 @@
                     {
                         "id": "00000000-0000-0000-0000-000000000000",
                         "flow": "xtls-rprx-direct",
-                        "level": 0,
+                        "level": 0
                     }
                 ],
-                "decryption": "none",
+                "decryption": "none"
             },
             "streamSettings": {
                 "network": "tcp",
