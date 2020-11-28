@@ -84,7 +84,7 @@ sed -i '/net.core.netdev_max_backlog/d' /etc/sysctl.conf
 sed -i '/net.ipv4.tcp_timestamps/d' /etc/sysctl.conf
 sed -i '/net.ipv4.tcp_max_orphans/d' /etc/sysctl.conf
 cat >> /etc/sysctl.conf <<EOF
-net.core.default_qdisc = fq
+net.core.default_qdisc = fq_pie
 net.ipv4.tcp_congestion_control = bbr
 net.ipv4.tcp_retries2 = 8
 net.ipv4.tcp_slow_start_after_idle = 0
