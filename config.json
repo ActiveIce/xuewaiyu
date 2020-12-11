@@ -10,7 +10,7 @@
                 "clients": [
                     {
                         "id": "00000000-0000-0000-0000-000000000000",
-                        "flow": "xtls-rprx-direct",
+                        "flow": "xtls-rprx-splice",
                         "level": 0
                     }
                 ],
