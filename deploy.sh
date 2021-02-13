@@ -12,7 +12,7 @@ apt update && apt upgrade -y && apt autoremove -y
 
 if [[ -f /usr/local/bin/xray ]]; then
     echo -e "正在更新"
-    bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)
+    bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) --beta
     echo -e "更新完成"
     read -p "需要重启后，更新才能生效，是否现在重启 ? [Y/n] :" yn
     [[ -z "${yn}" ]] && yn="y"
@@ -55,7 +55,7 @@ timedatectl set-timezone Asia/Shanghai
 read -p "请输入UUID（default:random）:" UUID
 [[ -z ${UUID} ]] && UUID=$(uuidgen -n @dns -N ${domain} -s)
 
-bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh)
+bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) --beta
 rm /usr/local/etc/xray/config.json
 wget https://raw.githubusercontent.com/ActiveIce/xuewaiyu/master/config.json -O /usr/local/etc/xray/config.json
 sed -i "s/00000000-0000-0000-0000-000000000000/${UUID}/" /usr/local/etc/xray/config.json
