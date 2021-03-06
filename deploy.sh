@@ -60,7 +60,7 @@ wget https://raw.githubusercontent.com/ActiveIce/xuewaiyu/master/config.json -O 
 sed -i "s/00000000-0000-0000-0000-000000000000/${UUID}/" /usr/local/etc/xray/config.json
 curl https://get.acme.sh | sh
 /root/.acme.sh/acme.sh --issue -d ${domain} --standalone
-/root/.acme.sh/acme.sh --install-cert -d ${domain} --key-file /usr/local/etc/xray/key.pem --fullchain-file /usr/local/etc/xray/fullchain.pem --reloadcmd "chmod 644 /usr/local/etc/xray/*.pem && systemctl restart xray"
+/root/.acme.sh/acme.sh --install-cert -d ${domain} --key-file /usr/local/etc/xray/key.pem --fullchain-file /usr/local/etc/xray/fullchain.pem --reloadcmd "chmod 644 /usr/local/etc/xray/*.pem"
 systemctl enable xray
 
 sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
