@@ -49,8 +49,7 @@ else
     esac
 fi
 
-apt install -y uuid-runtime tzdata cron socat unzip
-timedatectl set-timezone Asia/Shanghai
+apt install -y uuid-runtime cron socat unzip
 
 read -p "请输入UUID（default:random）:" UUID
 [[ -z ${UUID} ]] && UUID=$(uuidgen -n @dns -N ${domain} -s)
