@@ -51,7 +51,7 @@ fi
 read -p "请输入UUID（default:random）:" UUID
 [[ -z ${UUID} ]] && UUID=$(uuidgen -n @dns -N ${domain} -s)
 
-apt install -y uuid-runtime cron socat unzip
+apt install -y uuid-runtime cron socat unzip miredo
 bash <(curl -L https://raw.githubusercontent.com/XTLS/Xray-install/main/install-release.sh) --beta
 rm /usr/local/etc/xray/config.json
 wget https://raw.githubusercontent.com/ActiveIce/xuewaiyu/master/config.json -O /usr/local/etc/xray/config.json
