@@ -1,0 +1,102 @@
+name: auto build engine
+
+on: 
+  release:
+    types: [published]
+  schedule:
+    - cron: "0 16 * * *"
+  push:
+    branches: 
+      - master
+  watch:
+    types: [started]
+   
+jobs:
+  build-linux:
+    runs-on: ubuntu-24.04
+    
+    steps:
+    - name: Setup Go
+      uses: actions/setup-go@main
+      with:
+        go-version: 'stable'
+        check-latest: true
+    
+    - name: Bulid sing
+      run: |
+        git clone https://github.com/SagerNet/sing-box -b dev-next
+        pushd sing-box
+        VERSION=$(go run ./cmd/internal/read_tag)
+        go env -w CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GOAMD64=v3
+        go build -v -trimpath -tags "with_gvisor,with_quic,with_wireguard,with_utls,with_acme" \
+        -ldflags '-s -buildid= -X github.com/sagernet/sing-box/constant.Version=${VERSION} -checklinkname=0' \
+        ./cmd/sing-box
+        popd
+    
+    - name: Upload sing
+      uses: actions/upload-artifact@main
+      with:
+        name: sing-box-linux
+        path: sing-box/sing-box
+
+  build-windows:
+    runs-on: windows-2025
+    
+    steps:
+    - name: Setup Go
+      uses: actions/setup-go@main
+      with:
+        go-version: 'stable'
+        check-latest: true
+    
+    - name: Bulid sing
+      run: |
+        git clone https://github.com/SagerNet/sing-box -b dev-next
+        pushd sing-box
+        $VERSION=$(go run ./cmd/internal/read_tag)
+        go env -w CGO_ENABLED=0 GOOS=windows GOARCH=amd64 GOAMD64=v3
+        go build -v -trimpath -tags "with_gvisor,with_quic,with_wireguard,with_utls,with_naive_outbound,with_purego" `
+        -ldflags '-s -buildid= -X github.com/sagernet/sing-box/constant.Version=${VERSION} -checklinkname=0' `
+        ./cmd/sing-box
+        popd
+    
+    - name: Upload sing
+      uses: actions/upload-artifact@main
+      with:
+        name: sing-box-windows
+        path: sing-box/sing-box.exe
+
+  push:
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-24.04
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+    
+    - name: Clean
+      run: |
+        rm sing*
+    
+    - name: Download sing-box-linux
+      uses: actions/download-artifact@main
+      with:
+        name: sing-box-linux
+        path: ./
+    
+    - name: Download sing-box-windows
+      uses: actions/download-artifact@main
+      with:
+        name: sing-box-windows
+        path: ./
+    
+    - name: Commit
+      run: |
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions"
+        git checkout --orphan new_branch
+        git add -A
+        git commit -am "update new file"
+        git branch -D master
+        git branch -m master
+        git push origin master --force
